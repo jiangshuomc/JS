@@ -11,7 +11,7 @@ jobs:
           sudo apt-get install -y git zip unzip openjdk-17-jdk \
             python3-pip autoconf automake libtool pkg-config \
             zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
-            cmake libffi-dev libssl-dev wget curl
+            cmake libffi-dev libssl-dev wget curl unzip
       - uses: actions/setup-python@v5
         with:
           python-version: '3.9'
@@ -19,33 +19,31 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install 'cython<3' buildozer
-      - name: Prepare Android SDK (cmdline-tools + licenses)
+      - name: Prepare Android SDK
         run: |
           SDK="$HOME/.buildozer/android/platform/android-sdk"
-          mkdir -p "$SDK/cmdline-tools"
+          mkdir -p "$SDK/cmdline-tools" "$SDK/tools/bin" "$SDK/licenses" "$SDK/platforms" "$SDK/build-tools"
           if [ ! -x "$SDK/cmdline-tools/latest/bin/sdkmanager" ]; then
-            echo ">> downloading cmdline-tools"
-            curl -sSL -o /tmp/cmdline-tools.zip \
-              https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-            unzip -q /tmp/cmdline-tools.zip -d "$SDK/cmdline-tools"
+            echo ">> download cmdline-tools"
+            curl -sSL -o /tmp/cmd.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+            unzip -q /tmp/cmd.zip -d "$SDK/cmdline-tools"
             mv "$SDK/cmdline-tools/cmdline-tools" "$SDK/cmdline-tools/latest"
           fi
-          export ANDROID_SDK_ROOT="$SDK"
-          export ANDROID_HOME="$SDK"
-          export PATH="$SDK/cmdline-tools/latest/bin:$SDK/platform-tools:$PATH"
-          yes | sdkmanager --sdk_root="$SDK" --licenses >/dev/null 2>&1 || true
-          yes | sdkmanager --sdk_root="$SDK" "platform-tools" "platforms;android-33" "build-tools;33.0.2" || true
-          mkdir -p "$SDK/tools/bin"
-          ln -sf "$SDK/cmdline-tools/latest/bin/sdkmanager" "$SDK/tools/bin/sdkmanager"
+          SM="$SDK/cmdline-tools/latest/bin/sdkmanager"
+          ln -sf "$SM" "$SDK/tools/bin/sdkmanager"
           ln -sf "$SDK/cmdline-tools/latest/bin/avdmanager" "$SDK/tools/bin/avdmanager" 2>/dev/null || true
-          echo ">> sdkmanager: $(ls -l $SDK/tools/bin/sdkmanager)"
-          echo ">> build-tools: $(ls $SDK/build-tools 2>/dev/null)"
+          export ANDROID_SDK_ROOT="$SDK" ANDROID_HOME="$SDK"
+          export PATH="$(dirname $SM):$SDK/platform-tools:$PATH"
+          yes | "$SM" --sdk_root="$SDK" --licenses >/dev/null 2>&1 || true
+          yes | "$SM" --sdk_root="$SDK" "platform-tools" "platforms;android-33" "build-tools;33.0.2" || true
+          echo ">> check:"; ls -l "$SDK/tools/bin/sdkmanager"; "$SDK/tools/bin/sdkmanager" --version || true
+          ls "$SDK/build-tools" "$SDK/platforms" 2>/dev/null
       - name: Build
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           export ANDROID_SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
           export ANDROID_HOME="$ANDROID_SDK_ROOT"
-          export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
+          export PATH="$ANDROID_SDK_ROOT/tools/bin:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
           yes | buildozer -v android debug
       - uses: actions/upload-artifact@v4
         with:
