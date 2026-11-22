@@ -5,6 +5,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -13,13 +14,16 @@ jobs:
             zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
             cmake libffi-dev libssl-dev wget curl unzip
           sudo update-alternatives --auto java || true
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.9'
+
       - name: Install buildozer
         run: |
           python -m pip install --upgrade pip
           python -m pip install 'cython<3' buildozer
+
       - name: Prepare Android SDK
         run: |
           SDK="$HOME/.buildozer/android/platform/android-sdk"
@@ -30,19 +34,20 @@ jobs:
             unzip -q /tmp/cmd.zip -d "$SDK/cmdline-tools"
             mv "$SDK/cmdline-tools/cmdline-tools" "$SDK/cmdline-tools/latest"
           fi
-          export ANDROID_SDK_ROOT="$SDK" ANDROID_HOME="$SDK"
+          export ANDROID_SDK_ROOT="$SDK"
+          export ANDROID_HOME="$SDK"
           export JAVA_HOME="/usr/lib/jvm/temurin-17-jdk-amd64"
           export PATH="$SDK/cmdline-tools/latest/bin:$SDK/platform-tools:$JAVA_HOME/bin:$PATH"
           yes | sdkmanager --sdk_root="$SDK" --licenses >/dev/null 2>&1 || true
           yes | sdkmanager --sdk_root="$SDK" "platform-tools" "platforms;android-33" "build-tools;33.0.2" || true
           echo ">> which sdkmanager: $(which sdkmanager)"
-          echo ">> type: $(head -1 $(which sdkmanager))"
           rm -f "$SDK/tools/bin/sdkmanager"
           ln -s "$(which sdkmanager)" "$SDK/tools/bin/sdkmanager"
           printf '#!/usr/bin/sh\nls "%s/platforms" | sed "s/android-/API level: /g"\n' "$SDK" > "$SDK/tools/bin/avdmanager"
           chmod +x "$SDK/tools/bin/avdmanager"
           echo ">> SELFTEST:"; "$SDK/tools/bin/sdkmanager" --version && echo LINK_OK
           ls "$SDK/build-tools" "$SDK/platforms" 2>/dev/null
+
       - name: Build
         run: |
           export PATH="$HOME/.local/bin:$PATH"
@@ -50,7 +55,11 @@ jobs:
           export ANDROID_HOME="$ANDROID_SDK_ROOT"
           export JAVA_HOME="/usr/lib/jvm/temurin-17-jdk-amd64"
           export PATH="$ANDROID_SDK_ROOT/tools/bin:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$JAVA_HOME/bin:$PATH"
+          export GRADLE_OPTS="-Xmx2048m"
+          export _JAVA_OPTIONS="-Xmx2048m"
+          echo ">> disk:"; df -h /home/runner | tail -1
           yes | buildozer -v android debug
+
       - uses: actions/upload-artifact@v4
         with:
           name: jsstudio-apk
