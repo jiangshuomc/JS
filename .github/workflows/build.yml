@@ -5,16 +5,33 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip openjdk-17-jdk \
+            python3-pip autoconf automake libtool pkg-config \
+            zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
+            cmake libffi-dev libssl-dev
       - uses: actions/setup-python@v5
         with:
           python-version: '3.9'
       - name: Install buildozer
         run: |
           python -m pip install --upgrade pip
-          python -m pip install 'cython<3'
-          python -m pip install buildozer
+          python -m pip install 'cython<3' buildozer
+      - name: Accept Android SDK licenses
+        run: |
+          export ANDROID_SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
+          mkdir -p "$ANDROID_SDK_ROOT/licenses"
+          for f in android-sdk-license android-sdk-preview-license; do
+            printf '\n8933bad161af4178b1185d1a37fbf41ea5269c55\nd56f5187479451eabf01fb78af6dfcb131a6481e\n24333f8a63b6825ea9c5514f83c2829b004d1fee\n' > "$ANDROID_SDK_ROOT/licenses/$f"
+          done
+          echo "---- licenses ----"; ls -l "$ANDROID_SDK_ROOT/licenses"
       - name: Build
-        run: buildozer -v android debug
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          export ANDROID_SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
+          yes | buildozer -v android debug
       - uses: actions/upload-artifact@v4
         with:
           name: jsstudio-apk
