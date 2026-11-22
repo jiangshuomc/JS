@@ -12,6 +12,7 @@ jobs:
             python3-pip autoconf automake libtool pkg-config \
             zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
             cmake libffi-dev libssl-dev wget curl unzip
+          sudo update-alternatives --auto java || true
       - uses: actions/setup-python@v5
         with:
           python-version: '3.9'
@@ -29,21 +30,26 @@ jobs:
             unzip -q /tmp/cmd.zip -d "$SDK/cmdline-tools"
             mv "$SDK/cmdline-tools/cmdline-tools" "$SDK/cmdline-tools/latest"
           fi
-          SM="$SDK/cmdline-tools/latest/bin/sdkmanager"
-          ln -sf "$SM" "$SDK/tools/bin/sdkmanager"
-          ln -sf "$SDK/cmdline-tools/latest/bin/avdmanager" "$SDK/tools/bin/avdmanager" 2>/dev/null || true
           export ANDROID_SDK_ROOT="$SDK" ANDROID_HOME="$SDK"
-          export PATH="$(dirname $SM):$SDK/platform-tools:$PATH"
-          yes | "$SM" --sdk_root="$SDK" --licenses >/dev/null 2>&1 || true
-          yes | "$SM" --sdk_root="$SDK" "platform-tools" "platforms;android-33" "build-tools;33.0.2" || true
-          echo ">> check:"; ls -l "$SDK/tools/bin/sdkmanager"; "$SDK/tools/bin/sdkmanager" --version || true
+          export JAVA_HOME="/usr/lib/jvm/temurin-17-jdk-amd64"
+          export PATH="$SDK/cmdline-tools/latest/bin:$SDK/platform-tools:$JAVA_HOME/bin:$PATH"
+          yes | sdkmanager --sdk_root="$SDK" --licenses >/dev/null 2>&1 || true
+          yes | sdkmanager --sdk_root="$SDK" "platform-tools" "platforms;android-33" "build-tools;33.0.2" || true
+          echo ">> which sdkmanager: $(which sdkmanager)"
+          echo ">> type: $(head -1 $(which sdkmanager))"
+          rm -f "$SDK/tools/bin/sdkmanager"
+          ln -s "$(which sdkmanager)" "$SDK/tools/bin/sdkmanager"
+          printf '#!/usr/bin/sh\nls "%s/platforms" | sed "s/android-/API level: /g"\n' "$SDK" > "$SDK/tools/bin/avdmanager"
+          chmod +x "$SDK/tools/bin/avdmanager"
+          echo ">> SELFTEST:"; "$SDK/tools/bin/sdkmanager" --version && echo LINK_OK
           ls "$SDK/build-tools" "$SDK/platforms" 2>/dev/null
       - name: Build
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           export ANDROID_SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
           export ANDROID_HOME="$ANDROID_SDK_ROOT"
-          export PATH="$ANDROID_SDK_ROOT/tools/bin:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
+          export JAVA_HOME="/usr/lib/jvm/temurin-17-jdk-amd64"
+          export PATH="$ANDROID_SDK_ROOT/tools/bin:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$JAVA_HOME/bin:$PATH"
           yes | buildozer -v android debug
       - uses: actions/upload-artifact@v4
         with:
