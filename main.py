@@ -16,19 +16,18 @@ from kivy.core.window import Window
 import json
 import os
 
-# 窗口背景色（深色主题）
+# Window background color
 Window.clearcolor = get_color_from_hex("#0a0a1a")
 
-# 数据文件夹
+# Data folder
 DATA_DIR = "data"
 TODO_FILE = os.path.join(DATA_DIR, "todos.json")
 PASS_FILE = os.path.join(DATA_DIR, "passwords.json")
 
-# 如果data文件夹不存在就创建
 if not os.path.exists(DATA_DIR):
     os.makedirs(DATA_DIR)
 
-# ========== 读取和保存待办 ==========
+# ========== Load and save todos ==========
 def load_todos():
     if os.path.exists(TODO_FILE):
         with open(TODO_FILE, "r") as f:
@@ -39,7 +38,7 @@ def save_todos(todos):
     with open(TODO_FILE, "w") as f:
         json.dump(todos, f, indent=2)
 
-# ========== 读取和保存密码 ==========
+# ========== Load and save passwords ==========
 def load_passwords():
     if os.path.exists(PASS_FILE):
         with open(PASS_FILE, "r") as f:
@@ -50,7 +49,7 @@ def save_passwords(passwords):
     with open(PASS_FILE, "w") as f:
         json.dump(passwords, f, indent=2)
 
-# ========== 闪屏页面 ==========
+# ========== Splash Screen ==========
 class SplashScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -110,7 +109,7 @@ class SplashScreen(Screen):
         if self.manager:
             self.manager.current = 'main'
 
-# ========== 主菜单页面 ==========
+# ========== Main Menu Screen ==========
 class MainScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -118,7 +117,6 @@ class MainScreen(Screen):
 
         layout = BoxLayout(orientation="vertical", spacing=dp(18), padding=(dp(30), dp(60), dp(30), dp(30)))
 
-        # 标题
         layout.add_widget(Label(
             text="[b]JS's STUDIO[/b]",
             font_size=dp(28),
@@ -128,9 +126,8 @@ class MainScreen(Screen):
             halign="center"
         ))
 
-        # 待办按钮
         todo_btn = Button(
-            text="待办清单",
+            text="Todo List",
             font_size=dp(20),
             background_color=get_color_from_hex("#1a3a5c"),
             size_hint=(1, 0.15)
@@ -138,9 +135,8 @@ class MainScreen(Screen):
         todo_btn.bind(on_press=lambda x: setattr(self.manager, 'current', 'todo'))
         layout.add_widget(todo_btn)
 
-        # 密码本按钮
         pass_btn = Button(
-            text="密码本",
+            text="Password Vault",
             font_size=dp(20),
             background_color=get_color_from_hex("#1a3a5c"),
             size_hint=(1, 0.15)
@@ -148,9 +144,8 @@ class MainScreen(Screen):
         pass_btn.bind(on_press=lambda x: setattr(self.manager, 'current', 'password'))
         layout.add_widget(pass_btn)
 
-        # 退出按钮
         exit_btn = Button(
-            text="退出",
+            text="Exit",
             font_size=dp(16),
             background_color=get_color_from_hex("#37474f"),
             size_hint=(1, 0.1)
@@ -160,7 +155,7 @@ class MainScreen(Screen):
 
         self.add_widget(layout)
 
-# ========== 待办清单页面 ==========
+# ========== Todo List Screen ==========
 class TodoScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -169,9 +164,8 @@ class TodoScreen(Screen):
 
         layout = BoxLayout(orientation="vertical", spacing=dp(10), padding=dp(15))
 
-        # 标题
         layout.add_widget(Label(
-            text="[b]待办清单[/b]",
+            text="[b]Todo List[/b]",
             font_size=dp(24),
             color=get_color_from_hex("#4fc3f7"),
             size_hint=(1, 0.08),
@@ -179,17 +173,16 @@ class TodoScreen(Screen):
             halign="center"
         ))
 
-        # 输入栏
         input_row = BoxLayout(size_hint=(1, 0.08), spacing=dp(8))
         self.todo_input = TextInput(
-            hint_text="输入新任务...",
+            hint_text="Type a new task...",
             multiline=False,
             background_color=get_color_from_hex("#1a1a2e"),
             foreground_color=(1, 1, 1, 1),
             cursor_color=(1, 1, 1, 1)
         )
         add_btn = Button(
-            text="添加",
+            text="Add",
             size_hint=(0.25, 1),
             background_color=get_color_from_hex("#4fc3f7")
         )
@@ -198,16 +191,14 @@ class TodoScreen(Screen):
         input_row.add_widget(add_btn)
         layout.add_widget(input_row)
 
-        # 滚动列表
         scroll = ScrollView(size_hint=(1, 0.74))
         self.todo_list = GridLayout(cols=1, spacing=dp(6), size_hint_y=None)
         self.todo_list.bind(minimum_height=self.todo_list.setter('height'))
         scroll.add_widget(self.todo_list)
         layout.add_widget(scroll)
 
-        # 返回按钮
         back_btn = Button(
-            text="返回主菜单",
+            text="Back to Menu",
             size_hint=(1, 0.1),
             background_color=get_color_from_hex("#37474f")
         )
@@ -239,28 +230,23 @@ class TodoScreen(Screen):
         self.todo_list.clear_widgets()
         for i, todo in enumerate(self.todos):
             row = BoxLayout(size_hint_y=None, height=dp(45), spacing=dp(8))
-
-            # 任务按钮（点击切换完成状态）
             btn = Button(
                 text=f"{'[s]' if todo['done'] else ''}{todo['text']}{'[/s]' if todo['done'] else ''}",
                 background_color=get_color_from_hex("#1a1a2e"),
                 markup=True
             )
             btn.bind(on_press=lambda x, i=i: self.toggle_todo(i))
-
-            # 删除按钮
             del_btn = Button(
-                text="删除",
+                text="Del",
                 size_hint=(0.2, 1),
                 background_color=get_color_from_hex("#e53935")
             )
             del_btn.bind(on_press=lambda x, i=i: self.delete_todo(i))
-
             row.add_widget(btn)
             row.add_widget(del_btn)
             self.todo_list.add_widget(row)
 
-# ========== 密码本页面 ==========
+# ========== Password Vault Screen ==========
 class PasswordScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -269,9 +255,8 @@ class PasswordScreen(Screen):
 
         layout = BoxLayout(orientation="vertical", spacing=dp(10), padding=dp(15))
 
-        # 标题
         layout.add_widget(Label(
-            text="[b]密码本[/b]",
+            text="[b]Password Vault[/b]",
             font_size=dp(24),
             color=get_color_from_hex("#4fc3f7"),
             size_hint=(1, 0.06),
@@ -279,50 +264,47 @@ class PasswordScreen(Screen):
             halign="center"
         ))
 
-        # 添加表单
         form = GridLayout(cols=2, size_hint=(1, 0.22), spacing=dp(6))
         self.site_input = TextInput(
-            hint_text="网站/应用名称",
+            hint_text="Site / App name",
             background_color=get_color_from_hex("#1a1a2e"),
             foreground_color=(1, 1, 1, 1),
             cursor_color=(1, 1, 1, 1)
         )
         self.user_input = TextInput(
-            hint_text="用户名/账号",
+            hint_text="Username / Email",
             background_color=get_color_from_hex("#1a1a2e"),
             foreground_color=(1, 1, 1, 1),
             cursor_color=(1, 1, 1, 1)
         )
         self.pass_input = TextInput(
-            hint_text="密码",
+            hint_text="Password",
             password=True,
             background_color=get_color_from_hex("#1a1a2e"),
             foreground_color=(1, 1, 1, 1),
             cursor_color=(1, 1, 1, 1)
         )
-        add_btn = Button(text="保存", background_color=get_color_from_hex("#4fc3f7"))
+        add_btn = Button(text="Save", background_color=get_color_from_hex("#4fc3f7"))
         add_btn.bind(on_press=self.add_password)
 
-        form.add_widget(Label(text="网站:", color=(1, 1, 1, 1)))
+        form.add_widget(Label(text="Site:", color=(1, 1, 1, 1)))
         form.add_widget(self.site_input)
-        form.add_widget(Label(text="账号:", color=(1, 1, 1, 1)))
+        form.add_widget(Label(text="Account:", color=(1, 1, 1, 1)))
         form.add_widget(self.user_input)
-        form.add_widget(Label(text="密码:", color=(1, 1, 1, 1)))
+        form.add_widget(Label(text="Password:", color=(1, 1, 1, 1)))
         form.add_widget(self.pass_input)
         form.add_widget(Label(text=""))
         form.add_widget(add_btn)
         layout.add_widget(form)
 
-        # 密码列表
         scroll = ScrollView(size_hint=(1, 0.62))
         self.pass_list = GridLayout(cols=1, spacing=dp(6), size_hint_y=None)
         self.pass_list.bind(minimum_height=self.pass_list.setter('height'))
         scroll.add_widget(self.pass_list)
         layout.add_widget(scroll)
 
-        # 返回按钮
         back_btn = Button(
-            text="返回主菜单",
+            text="Back to Menu",
             size_hint=(1, 0.1),
             background_color=get_color_from_hex("#37474f")
         )
@@ -353,9 +335,9 @@ class PasswordScreen(Screen):
         entry = self.passwords[index]
         popup = Popup(title=entry["site"], size_hint=(0.85, 0.45))
         content = BoxLayout(orientation="vertical", spacing=dp(10), padding=dp(15))
-        content.add_widget(Label(text=f"账号: {entry['user']}", color=(1, 1, 1, 1)))
-        content.add_widget(Label(text=f"密码: {entry['password']}", color=(1, 1, 1, 1)))
-        close_btn = Button(text="关闭", background_color=get_color_from_hex("#37474f"))
+        content.add_widget(Label(text=f"Account: {entry['user']}", color=(1, 1, 1, 1)))
+        content.add_widget(Label(text=f"Password: {entry['password']}", color=(1, 1, 1, 1)))
+        close_btn = Button(text="Close", background_color=get_color_from_hex("#37474f"))
         close_btn.bind(on_press=popup.dismiss)
         content.add_widget(close_btn)
         popup.content = content
@@ -371,7 +353,7 @@ class PasswordScreen(Screen):
             )
             btn.bind(on_press=lambda x, i=i: self.show_password(i))
             del_btn = Button(
-                text="删除",
+                text="Del",
                 size_hint=(0.2, 1),
                 background_color=get_color_from_hex("#e53935")
             )
@@ -380,7 +362,7 @@ class PasswordScreen(Screen):
             row.add_widget(del_btn)
             self.pass_list.add_widget(row)
 
-# ========== App主类 ==========
+# ========== App Main Class ==========
 class MyApp(App):
     def build(self):
         self.title = "JS's STUDIO"
